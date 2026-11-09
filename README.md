@@ -14,6 +14,28 @@ shows up in place, marked, while you're already on the next paragraph.
 You don't switch windows, write prompts or watch the agent work. You read and react, and the doc gets better
 as you go.
 
+## How it works
+
+```
+ ┌──────────────┐  comments  ┌───────────────────────────┐   jobs    ┌──────────────────────┐
+ │   Browser    │ ─────────▶ │   Daemon (docs serve)     │ ────────▶ │  Agent, per repo     │
+ │  the editor  │ ◀───────── │   localhost:3459          │ ◀──────── │  skill + poll.sh     │
+ │  (one tab,   │   edits    │                           │  replies  │                      │
+ │  every repo) │            │  repo-a/.docs             │           │  Claude Code with    │
+ └──────────────┘            │    threads·history·queue  │           │  /collab-docs, or    │
+                             │  repo-b/.docs             │           │  any local agent     │
+                             │    threads·history·queue  │           └──────────────────────┘
+                             └───────────────────────────┘
+```
+
+1. **The skill registers the current repo as a workspace.** `docs serve "$PWD"` starts the daemon if needed.
+2. **The polling script waits on the daemon in the background.** It's a long-poll, so an idle agent uses no
+   tokens.
+3. **When you comment, the daemon hands the page's threads to that repo's agent and locks the page.** The agent
+   edits the Markdown file, replies, and the page unlocks.
+
+The daemon stores each doc's comment threads and version history in its repo's `.docs/.collab/`.
+
 ## Get started in 1 minute
 
 ```bash
