@@ -108,7 +108,29 @@
     .or { color:var(--faint); font:12px var(--mono); margin:4px 0 0; }
     .hint { color:var(--faint); font:12px var(--mono); margin-top:28px; text-align:center; }
 
+    /* ---- architecture ---- */
+    .arch { display:grid; grid-template-columns:1fr auto 1.35fr auto 1fr; align-items:stretch; gap:10px; margin:0 0 18px; }
+    .node { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 14px 16px; min-width:0; }
+    .node.core { border-color:rgba(222,138,104,.45); background:linear-gradient(180deg, var(--accent-soft), transparent 70%), var(--card); }
+    .node .lbl { font:11px/1 var(--mono); color:var(--accent); text-transform:uppercase; letter-spacing:.1em; }
+    .node h3 { font:600 15px/1.3 var(--sans); color:var(--white); margin:8px 0 6px; }
+    .node p { color:var(--dim); font-size:13px; line-height:1.55; margin:0; }
+    .node code, .steps code { font:12px var(--mono); color:var(--fg); background:var(--code); padding:1px 5px; border-radius:4px; }
+    .ws { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+    .ws div { font:12px/1.4 var(--mono); color:var(--fg); border:1px dashed var(--line); border-radius:8px; padding:7px 9px; }
+    .ws div span { color:var(--faint); display:block; }
+    .wire { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px; font:11px/1.3 var(--mono); color:var(--faint); text-align:center; }
+    .wire b { color:var(--dim); font-weight:400; font-size:16px; }
+    .steps { list-style:none; counter-reset:s; padding:0; margin:0 0 8px; display:grid; gap:10px; }
+    .steps li { counter-increment:s; position:relative; padding-left:34px; color:var(--fg); font-size:14px; }
+    .steps li::before { content:counter(s); position:absolute; left:0; top:1px; width:22px; height:22px; border-radius:50%;
+                        border:1px solid rgba(222,138,104,.45); color:var(--accent); font:12px/20px var(--mono); text-align:center; }
+    .steps li span { color:var(--dim); }
+
     @media (max-width:700px) {
+      .arch { grid-template-columns:minmax(0, 1fr); }
+      .wire { flex-direction:row; }
+      .wire b { transform:rotate(90deg); }
       body { padding-top:28px; }
       .pitch { grid-template-columns:minmax(0, 1fr); }
       .flow a.gh { margin-left:0; width:100%; }
@@ -168,6 +190,39 @@
       <aside class="rail" id="rail"><span class="lbl">Comments</span></aside>
     </div>
   </div>
+
+  <p class="eyebrow" style="margin-top:56px">How it works</p>
+  <p class="blurb">One small daemon on your machine. Each repo's agent connects to it with a skill and a polling script.</p>
+
+  <section class="arch">
+    <div class="node">
+      <span class="lbl">Browser</span>
+      <h3>The editor</h3>
+      <p>One tab for every repo. You read, highlight and comment. Changes stream in live.</p>
+    </div>
+    <div class="wire"><b>⇄</b>comments<br>edits</div>
+    <div class="node core">
+      <span class="lbl">Daemon</span>
+      <h3><code>docs serve</code> · localhost:3459</h3>
+      <p>Owns the workspaces. Stores each doc's comment threads and version history, and queues threads as jobs for that repo's agent.</p>
+      <div class="ws">
+        <div>repo-a/.docs <span>threads · history · job queue</span></div>
+        <div>repo-b/.docs <span>threads · history · job queue</span></div>
+      </div>
+    </div>
+    <div class="wire"><b>⇄</b>jobs<br>replies</div>
+    <div class="node">
+      <span class="lbl">Agent, per repo</span>
+      <h3>Skill + <code>poll.sh</code></h3>
+      <p>Claude Code with the <code>/collab-docs</code> skill, or any local agent. It edits the Markdown file directly and posts replies.</p>
+    </div>
+  </section>
+
+  <ol class="steps">
+    <li>The skill registers the current repo as a workspace. <span><code>docs serve "$PWD"</code> starts the daemon if needed.</span></li>
+    <li>The polling script waits on the daemon in the background. <span>It's a long-poll, so an idle agent uses no tokens.</span></li>
+    <li>When you comment, the daemon hands the page's threads to that repo's agent and locks the page. <span>The agent edits the file, replies, and the page unlocks.</span></li>
+  </ol>
 
   <div class="install">
     <p class="eyebrow" style="margin:28px 0 6px">Get started in 1 minute</p>
