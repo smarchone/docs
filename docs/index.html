@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docs</title>
+  <meta name="description" content="Edit your repo's docs with comment threads. Claude makes the change and replies in place.">
+  <style>
+    :root {
+      --bg:#121214; --win:#18181b; --bar:#1d1d21; --line:#2b2b30; --code:#212126; --card:#17171a;
+      --fg:#cfcdc8; --dim:#8c8a85; --faint:#5a5955; --white:#ecebe6; --accent:#de8a68; --accent-soft:rgba(222,138,104,.12);
+      --you:#e9b949; --you-soft:rgba(233,185,73,.22); --ok:#4fbf83;
+      --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans:system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing:border-box; }
+    html, body { background:var(--bg); color:var(--fg); margin:0; }
+    body { font:15px/1.65 var(--sans); padding:56px 16px 48px; -webkit-font-smoothing:antialiased;
+           background:radial-gradient(900px 420px at 50% -120px, rgba(222,138,104,.10), transparent 70%) no-repeat, var(--bg); }
+    main { max-width:860px; margin:0 auto; }
+    a { color:inherit; }
+
+    h1 { font:600 13px/1 var(--mono); color:var(--dim); margin:0 0 22px; letter-spacing:-.01em; }
+    h1 span { color:var(--accent); }
+    .hero { margin:0 0 14px; font:700 clamp(34px, 7vw, 56px)/1.05 var(--sans); color:var(--white); letter-spacing:-.035em; }
+    .hero em { font-style:normal; color:var(--accent);
+               background:linear-gradient(100deg, #f0b48f, #de8a68 55%, #c96a4a); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .tldr { color:var(--fg); margin:0 0 22px; max-width:640px; }
+    .tldr span { font:11px/1 var(--mono); color:var(--accent); text-transform:uppercase; letter-spacing:.1em; margin-right:8px; }
+    .tldr code { font:13px var(--mono); color:var(--accent); background:var(--accent-soft); padding:2px 6px; border-radius:5px; }
+
+    .problem { margin:8px 0 24px; padding:16px 20px; border-left:2px solid var(--accent); background:linear-gradient(90deg, var(--accent-soft), transparent 80%); border-radius:0 12px 12px 0; }
+    .problem .lbl, .fix { font:11px/1 var(--mono); color:var(--accent); text-transform:uppercase; letter-spacing:.1em; }
+    .problem ul { list-style:none; padding:0; margin:12px 0 0; }
+    .problem li { color:var(--fg); font-size:15px; margin:6px 0; padding-left:20px; position:relative; }
+    .problem li::before { content:"×"; position:absolute; left:0; color:var(--faint); }
+    .fix { display:block; margin:0 0 12px; }
+    .pitch { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; margin:0 0 18px; }
+    .pitch div { min-width:0; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 18px 20px; transition:border-color .2s; }
+    .pitch div:hover { border-color:#3a3a40; }
+    .pitch .lbl { font:11px/1 var(--mono); color:var(--accent); text-transform:uppercase; letter-spacing:.1em; }
+    .pitch h2 { font:600 16px/1.35 var(--sans); color:var(--white); margin:10px 0 6px; }
+    .pitch p { color:var(--dim); font-size:14px; line-height:1.6; margin:0; }
+    .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px 6px; margin:0 0 52px; font:13px/1 var(--mono); color:var(--faint); }
+    .flow span { color:var(--dim); border:1px solid var(--line); border-radius:999px; padding:8px 12px; }
+    .flow span.gold { color:var(--accent); border-color:rgba(222,138,104,.45); background:var(--accent-soft); }
+    .flow span.end { color:var(--white); }
+    .flow a.gh { color:var(--dim); margin-left:auto; text-decoration:none; }
+    .flow a.gh:hover { color:var(--accent); }
+
+    .eyebrow { font:600 12px/1 var(--mono); color:var(--faint); text-transform:uppercase; letter-spacing:.12em; margin:0 0 14px; }
+    .blurb { color:var(--dim); font-size:14px; margin:0 0 16px; }
+
+    /* ---- the demo window ---- */
+    .win { background:var(--win); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+           box-shadow:0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02) inset; }
+    .bar { display:flex; align-items:center; gap:12px; height:40px; padding:0 14px; background:var(--bar); border-bottom:1px solid var(--line); }
+    .dots { display:flex; gap:7px; }
+    .dots i { width:11px; height:11px; border-radius:50%; background:#333; }
+    .title { flex:1; text-align:center; font:12px var(--mono); color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ctl { display:flex; gap:4px; }
+    .ctl button { font:12px var(--mono); color:var(--dim); background:none; border:0; padding:5px 8px; border-radius:6px; cursor:pointer; }
+    .ctl button:hover { color:var(--fg); background:#262626; }
+
+    .status { display:flex; align-items:center; gap:8px; padding:8px 20px; font:12px var(--mono); color:var(--dim); border-bottom:1px solid var(--line); min-height:35px; }
+    .status i { width:8px; height:8px; border-radius:50%; background:var(--ok); transition:background .3s; flex:none; }
+    .status.working i { background:var(--accent); animation:pulse 1s ease-in-out infinite; }
+    .status.working { color:var(--accent); }
+    @keyframes pulse { 50% { opacity:.35; } }
+
+    .stage { display:grid; grid-template-columns:minmax(0, 1fr) 250px; min-height:340px; }
+    .doc { padding:26px 30px 30px; font:15px/1.7 var(--sans); color:var(--fg); }
+    .doc h3 { font:700 22px/1.25 var(--sans); color:var(--white); margin:0 0 4px; letter-spacing:-.01em; }
+    .doc .path { font:12px var(--mono); color:var(--faint); margin:0 0 18px; }
+    .doc h4 { font:600 15px/1.3 var(--sans); color:var(--white); margin:20px 0 6px; }
+    .doc p { margin:0 0 12px; position:relative; }
+    .doc code { font:13px var(--mono); background:var(--code); padding:1px 5px; border-radius:4px; }
+    .hl { border-radius:3px; transition:background .25s; }
+    .hl.on { background:var(--you-soft); box-shadow:0 2px 0 var(--you); }
+    .changed::before { content:""; position:absolute; left:-16px; top:3px; bottom:3px; width:3px; border-radius:2px; background:var(--accent); }
+    .caret { display:inline-block; width:2px; height:1.1em; vertical-align:-.18em; background:var(--accent); animation:blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity:0; } }
+
+    .rail { border-left:1px solid var(--line); padding:18px 14px; display:flex; flex-direction:column; gap:12px; background:#151518; }
+    .rail .lbl { font:11px/1 var(--mono); color:var(--faint); text-transform:uppercase; letter-spacing:.1em; }
+    .thread { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.5;
+              opacity:0; transform:translateY(6px); transition:opacity .3s, transform .3s, border-color .3s; }
+    .thread.show { opacity:1; transform:none; }
+    .thread.active { border-color:rgba(233,185,73,.5); }
+    .thread.resolved { opacity:.55; }
+    .msg { margin:0 0 6px; }
+    .msg:last-child { margin:0; }
+    .who { font:600 11px/1 var(--mono); display:block; margin-bottom:3px; }
+    .who.you { color:var(--you); }
+    .who.claude { color:var(--accent); }
+    .msg .txt { color:var(--fg); }
+    .tick { font:11px var(--mono); color:var(--ok); margin-top:6px; display:none; }
+    .thread.resolved .tick { display:block; }
+
+    .install { margin-top:14px; display:flex; flex-direction:column; gap:8px; font:13px var(--mono); }
+    .cmd { display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+    .cmd code { flex:1; min-width:0; overflow-x:auto; white-space:nowrap; color:var(--fg); scrollbar-width:none; }
+    .cmd code::before { content:"$ "; color:var(--dim); }
+    .cmd code.cc::before { content:"❯ "; color:var(--accent); }
+    .cmd .note { color:var(--faint); white-space:nowrap; }
+    .cmd button { font:12px var(--mono); color:var(--dim); background:none; border:0; cursor:pointer; padding:0; }
+    .cmd button:hover { color:var(--accent); }
+    .or { color:var(--faint); font:12px var(--mono); margin:4px 0 0; }
+    .hint { color:var(--faint); font:12px var(--mono); margin-top:28px; text-align:center; }
+
+    @media (max-width:700px) {
+      body { padding-top:28px; }
+      .pitch { grid-template-columns:minmax(0, 1fr); }
+      .flow a.gh { margin-left:0; width:100%; }
+      .title, .hint, .cmd .note { display:none; }
+      .stage { grid-template-columns:minmax(0, 1fr); min-height:0; }
+      .rail { border-left:0; border-top:1px solid var(--line); }
+      .doc { padding:20px 20px 22px 24px; font-size:14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .thread, .hl { transition:none; }
+      .status.working i, .caret { animation:none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1><span>~/</span>smarchone/docs</h1>
+  <p class="hero">Don't describe the fix.<br><em>Comment on it.</em></p>
+  <p class="tldr"><span>tl;dr</span> Your agent's docs, in a clean editor. Highlight a line, leave a comment, keep reading. Claude edits the file and replies in the thread. Run <code>/collab-docs</code> in any repo.</p>
+
+  <section class="problem">
+    <span class="lbl">The problem</span>
+    <ul>
+      <li>Editing a doc from the terminal means describing where the problem is: "second section, the bullet about retries…"</li>
+      <li>Then you scroll a diff to check it got the right spot.</li>
+      <li>That's a lot of attention for a one-line fix, and you lose your place in the doc.</li>
+    </ul>
+  </section>
+
+  <span class="fix">The fix</span>
+  <section class="pitch">
+    <div><span class="lbl">Point</span><h2>Highlight the line. Say what's wrong.</h2><p>Comments land on the exact text you mean, so there's nothing to explain.</p></div>
+    <div><span class="lbl">Keep reading</span><h2>Claude fixes it while you move on.</h2><p>A Claude Code session in your repo edits the file and answers in the thread, using your code for context.</p></div>
+    <div><span class="lbl">Glance back</span><h2>Changes show up in place.</h2><p>Every edit is marked, diffable and undoable. The Markdown stays in your repo's <code>.docs/</code> folder.</p></div>
+  </section>
+  <p class="flow"><span>read</span>→<span class="gold">highlight + comment</span>→<span>keep reading</span>→<span class="end">doc gets better</span><a class="gh" href="https://github.com/smarchone/docs">GitHub →</a></p>
+
+  <p class="eyebrow">See it work</p>
+  <p class="blurb">Two comments on a spec. One asks for an edit, the other asks a question. You never leave the page.</p>
+
+  <div class="win" aria-label="Animated demo of the Docs editor">
+    <div class="bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="title">Docs — specs/retries.md</div>
+      <div class="ctl"><button id="skip" title="Skip to end (space)">skip ⏭</button></div>
+    </div>
+    <div class="status" id="status"><i></i><span id="statusText">Claude is listening</span></div>
+    <div class="stage">
+      <article class="doc">
+        <h3>Retries</h3>
+        <p class="path">.docs/specs/retries.md</p>
+        <p id="p1"><span class="hl" id="h1">When a request to the upstream API fails, the client should, in most cases and depending on the type of error that was returned, consider trying the request again a number of times before eventually giving up.</span></p>
+        <h4>Backoff</h4>
+        <p>Waits double after each attempt, starting at 200 ms, with a little jitter so clients don't retry in lockstep.</p>
+        <p><span class="hl" id="h2">We give up after 5 attempts.</span> Errors after that go to the dead-letter queue.</p>
+      </article>
+      <aside class="rail" id="rail"><span class="lbl">Comments</span></aside>
+    </div>
+  </div>
+
+  <div class="install">
+    <p class="eyebrow" style="margin:28px 0 6px">Get started in 1 minute</p>
+    <div class="cmd"><code>npm i -g @smarchone/docs</code><span class="note">Node 22+</span><button data-copy>copy</button></div>
+    <div class="cmd"><code>npx skills add smarchone/docs --skill collab-docs -g</code><button data-copy>copy</button></div>
+    <div class="cmd"><code class="cc">/collab-docs</code><span class="note">in Claude Code, in any repo</span><button data-copy>copy</button></div>
+    <p class="or">Then open http://127.0.0.1:3459 and leave your first comment. Or skip the global install: npx @smarchone/docs serve</p>
+  </div>
+  <p class="hint">space to skip · runs on your machine, nothing leaves it</p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const SHORT = "Retry failed requests up to 5 times, unless the error is permanent (4xx).";
+const ORIGINAL = $("h1").textContent;
+const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let run = 0, instant = false;
+
+const STOP = Symbol();
+const wait = (r, ms) => new Promise((res, rej) => {
+  if (r !== run) return rej(STOP);
+  if (instant) return res();
+  setTimeout(() => r === run ? res() : rej(STOP), ms);
+});
+
+function status(working, text) {
+  $("status").classList.toggle("working", working);
+  $("statusText").textContent = text;
+}
+function thread() {
+  const t = document.createElement("div");
+  t.className = "thread";
+  t.innerHTML = '<div class="msgs"></div><div class="tick">✓ resolved</div>';
+  $("rail").appendChild(t);
+  requestAnimationFrame(() => t.classList.add("show", "active"));
+  return t;
+}
+async function say(r, t, who, text) {
+  const m = document.createElement("p");
+  m.className = "msg";
+  m.innerHTML = `<span class="who ${who}">${who === "you" ? "You" : "Claude"}</span><span class="txt"></span>`;
+  t.querySelector(".msgs").appendChild(m);
+  const out = m.querySelector(".txt");
+  for (let i = 1; i <= text.length && !instant; i += 2) { out.textContent = text.slice(0, i); await wait(r, 28); }
+  out.textContent = text;
+}
+async function select(r, id) {
+  await wait(r, 500);
+  $(id).classList.add("on");
+  await wait(r, 500);
+}
+async function rewrite(r, el, text) {
+  for (let i = el.textContent.length; i >= 0 && !instant; i -= 6) { el.textContent = el.textContent.slice(0, i); await wait(r, 14); }
+  for (let i = 0; i <= text.length && !instant; i += 2) {
+    el.innerHTML = text.slice(0, i) + '<span class="caret"></span>';
+    await wait(r, 22);
+  }
+  el.textContent = text;
+}
+
+async function play() {
+  const r = ++run; instant = REDUCE;
+  $("skip").textContent = "skip ⏭";
+  $("rail").innerHTML = '<span class="lbl">Comments</span>';
+  $("h1").textContent = ORIGINAL;
+  document.querySelectorAll(".hl").forEach(h => h.classList.remove("on"));
+  $("p1").classList.remove("changed");
+  status(false, "Claude is listening");
+  try {
+    // Comment 1: an edit.
+    await select(r, "h1");
+    const t1 = thread();
+    await say(r, t1, "you", "Way too wordy. One line, and say which errors.");
+    await wait(r, 600);
+    status(true, "Claude is editing this page");
+    await wait(r, 700);
+    $("h1").classList.remove("on");
+    await rewrite(r, $("h1"), SHORT);
+    $("p1").classList.add("changed");
+    await say(r, t1, "claude", "Cut it to one line and named the 4xx exception.");
+    t1.classList.remove("active"); t1.classList.add("resolved");
+    status(false, "Claude is listening");
+
+    // Comment 2: a question Claude checks against the code.
+    await wait(r, 1100);
+    await select(r, "h2");
+    const t2 = thread();
+    await say(r, t2, "you", "Is this still true?");
+    await wait(r, 500);
+    status(true, "Claude is reading src/http/retry.ts");
+    await wait(r, 1400);
+    await say(r, t2, "claude", "Yes. MAX_ATTEMPTS is 5 in src/http/retry.ts.");
+    $("h2").classList.remove("on");
+    t2.classList.remove("active"); t2.classList.add("resolved");
+    status(false, "Claude is listening");
+    $("skip").textContent = "replay ↻";
+  } catch (e) { if (e !== STOP) throw e; }
+}
+
+function skip() {
+  if ($("skip").textContent.startsWith("replay")) play();
+  else instant = true;
+}
+$("skip").onclick = skip;
+addEventListener("keydown", e => {
+  if (e.key === " " && !e.target.closest?.("button")) { e.preventDefault(); skip(); }
+});
+document.querySelectorAll("[data-copy]").forEach(b => b.onclick = async () => {
+  try { await navigator.clipboard.writeText(b.parentElement.querySelector("code").textContent); b.textContent = "copied"; }
+  catch { b.textContent = "select it"; }
+});
+
+play();
+</script>
+</body>
+</html>
