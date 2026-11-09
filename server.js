@@ -833,7 +833,8 @@ const server = http.createServer(async (req, res) => {
     if (!file.startsWith(APP_DIR + path.sep)) return send(res, 403, { error: 'Forbidden' });
     const data = await readFile(file).catch(() => null);
     if (!data) return send(res, 404, { error: 'Not found' });
-    res.writeHead(200, { 'Content-Type': `${MIME[path.extname(file)] || 'application/octet-stream'}; charset=utf-8` });
+    // no-cache: the browser revalidates, so an upgraded daemon never runs a stale app.js / style.css
+    res.writeHead(200, { 'Content-Type': `${MIME[path.extname(file)] || 'application/octet-stream'}; charset=utf-8`, 'Cache-Control': 'no-cache' });
     res.end(data);
   } catch (err) {
     send(res, err.status || 500, { error: err.message, ...(err.extra || {}) });

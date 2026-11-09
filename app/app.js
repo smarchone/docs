@@ -829,22 +829,43 @@ function threadControls(t) {
     if (e.shiftKey) send({ batch: true }).then(publishBatch);
     else send({ batch: batching() });
   });
+  const del = async () => {
+    if (!confirm('Delete this thread?')) return;
+    await api('POST', '/api/threads/delete', { path: state.doc.path, thread_id: t.id });
+    state.active = null;
+    await loadDoc(state.doc.path, { keepView: true });
+  };
+  const toggle = async () => {
+    await api('POST', '/api/threads/status', { path: state.doc.path, thread_id: t.id, status: t.status === 'open' ? 'resolved' : 'open' });
+    await loadDoc(state.doc.path, { keepView: true });
+  };
   return [
-    el('div', { class: 't-reply' }, ta),
+    composer(ta, sendButton(send, 'Reply', Boolean(t.draft), ta)),
     el(
       'div',
       { class: 't-actions' },
-      el('span', { class: 'hint' }, '⌘↵'),
-      hasDraft ? el('button', { class: 'ghost', onclick: discard }, t.draft ? 'Discard' : 'Discard draft') : null,
-      t.draft ? null : el('button', { class: 'ghost', onclick: async () => { if (confirm('Delete this thread?')) { await api('POST', '/api/threads/delete', { path: state.doc.path, thread_id: t.id }); state.active = null; await loadDoc(state.doc.path, { keepView: true }); } } }, 'Delete'),
-      t.draft ? null : el('button', { onclick: async () => { await api('POST', '/api/threads/status', { path: state.doc.path, thread_id: t.id, status: t.status === 'open' ? 'resolved' : 'open' }); await loadDoc(state.doc.path, { keepView: true }); } }, t.status === 'open' ? 'Resolve' : 'Reopen'),
-      sendButton(send, 'Reply', Boolean(t.draft)),
+      t.draft ? null : el('button', { class: 'link', onclick: toggle }, t.status === 'open' ? '✓ Resolve' : 'Reopen'),
+      hasDraft ? el('button', { class: 'link', onclick: discard }, t.draft ? 'Discard' : 'Discard draft') : null,
+      t.draft ? null : el('button', { class: 'link danger', onclick: del }, 'Delete'),
     ),
   ];
 }
 
+// The text box and its send button share one rounded frame that lights up on focus
+function composer(ta, send, extra = null) {
+  return el(
+    'div',
+    { class: 'composer', onclick: (e) => e.target === e.currentTarget && ta.focus() },
+    ta,
+    el('div', { class: 'composer-bar' }, el('span', { class: 'hint' }, extra || '⌘↵ to send'), send),
+  );
+}
+
 function draftCard() {
-  const ta = el('textarea', { rows: '2', placeholder: batchMode ? 'Draft comment, sent when you publish…' : state.draft.anchor ? 'Comment for Claude…' : 'Comment on this page…' });
+  const ta = el('textarea', { rows: '2', 'data-draft': 'draft', placeholder: batchMode ? 'Draft comment, sent when you publish…' : state.draft.anchor ? 'Comment for Claude…' : 'Comment on this page…' });
+  // Kept on state.draft so re-renders (batch toggle, presence updates) don't wipe what you typed
+  ta.value = state.draft.text || '';
+  ta.addEventListener('input', () => (state.draft.text = ta.value));
   const submit = (opts) => submitDraft(ta.value, opts);
   ta.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
@@ -856,16 +877,27 @@ function draftCard() {
   return el(
     'div',
     { class: `thread active draft${state.draft.anchor ? '' : ' page-level'}`, 'data-id': 'draft' },
-    el('div', { class: 't-head' }, avatar('you'), el('span', { class: 'name' }, 'You')),
-    ta,
-    el('div', { class: 't-actions' }, el('span', { class: 'hint' }, '⌘↵'), el('button', { class: 'ghost', onclick: cancelDraft }, 'Cancel'), sendButton(submit, 'Comment')),
+    el('div', { class: 't-quote' }, state.draft.anchor ? state.draft.anchor.quote : 'Page comment'),
+    composer(ta, sendButton(submit, 'Comment', false, ta), el('button', { class: 'link', onclick: cancelDraft, title: 'Esc' }, 'Cancel')),
   );
 }
 
 // In batch mode the button adds a draft; otherwise it sends to Claude right away
-function sendButton(send, label, draftOnly = false) {
+const SEND_ICON =
+  '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>';
+
+function sendButton(send, label, draftOnly = false, ta = null) {
   const batch = draftOnly || batchMode;
-  return el('button', { class: 'primary', onclick: () => send({ batch }), title: batch ? 'Saved as a draft until you publish' : 'Send to Claude now' }, batch ? 'Add to batch' : label);
+  const btn = batch
+    ? el('button', { class: 'send batch', onclick: () => send({ batch }), title: 'Saved as a draft until you publish (⌘↵)' }, 'Add to batch')
+    : el('button', { class: 'send', onclick: () => send({ batch }), title: `${label}: send to Claude now (⌘↵)`, 'aria-label': label, html: SEND_ICON });
+  // Disabled until there's something to send
+  if (ta) {
+    const sync = () => (btn.disabled = !ta.value.trim());
+    ta.addEventListener('input', sync);
+    queueMicrotask(sync);
+  }
+  return btn;
 }
 
 function autoGrow(ta) {
