@@ -102,28 +102,49 @@ button:disabled { opacity: .45; cursor: default; }
 
 /* ---------- Sidebar ---------- */
 .sidebar { background: var(--sidebar); border-right: 1px solid var(--border); padding: 14px 10px; overflow-y: auto; display: flex; flex-direction: column; }
-.brand { display: flex; gap: 8px; align-items: center; padding: 2px 8px 2px; font-size: 14px; }
+.brand { display: flex; gap: 8px; align-items: center; padding: 2px 8px 14px; font-size: 14px; }
 .logo { color: var(--claude); font-size: 18px; }
-.root { font-size: 11px; color: var(--faint); padding: 2px 8px 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
-.pages { list-style: none; margin: 0; padding: 0; }
-.pages li {
-  display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer;
-  font-size: 13.5px; color: var(--muted);
-}
-.pages li:hover { background: var(--hover); color: var(--text); }
-.pages li.active { background: var(--hover); color: var(--text); font-weight: 500; }
+
+/* Repos are sections; the open repo's pages hang off it in an indented, guided group */
+.pages, .pages ul { list-style: none; margin: 0; padding: 0; }
 .pages .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pages .dir { color: var(--faint); }
 .pages .pending { background: var(--claude); color: #fff; font-size: 10.5px; border-radius: 999px; padding: 0 6px; line-height: 17px; }
-.pages li.ws { margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--text); letter-spacing: .01em; }
-.pages li.ws:first-child { margin-top: 0; }
-.pages li.ws.current { cursor: default; }
-.pages li.ws.current:hover { background: transparent; }
+.ws-group + .ws-group { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; }
+
+.pages li.ws {
+  display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 1px; padding: 6px 8px; border-radius: 6px;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .01em;
+}
+.pages li.ws:hover { background: var(--hover); color: var(--text); }
+.ws-group.current li.ws { color: var(--text); cursor: default; }
+.ws-group.current li.ws:hover { background: transparent; }
 .ws-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
 .ws-dot.listening { background: var(--ok); }
 .ws-dot.working { background: var(--claude); }
+.ws-path {
+  display: block; flex-basis: 100%; padding-left: 15px; font-size: 11px; font-weight: 400; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left;
+}
+.ws-remove {
+  visibility: hidden; border: 0; background: none; color: var(--faint); font-size: 14px; line-height: 1;
+  padding: 0 2px; cursor: pointer; border-radius: 4px;
+}
+.pages li.ws:hover .ws-remove { visibility: visible; }
+.ws-remove:hover { color: var(--text); background: var(--border); }
+
+.ws-pages > ul { margin: 2px 0 4px 11px; padding-left: 6px; border-left: 1px solid var(--border); }
+.pages li.page {
+  display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
+  font-size: 13px; color: var(--muted);
+}
+.pages li.page:hover { background: var(--hover); color: var(--text); }
+.pages li.page.active { background: var(--hover); color: var(--text); font-weight: 500; }
+.page-icon { display: flex; flex: none; color: var(--faint); }
+.pages li.page.active .page-icon { color: var(--muted); }
+.pages .dir { color: var(--faint); }
 .pages .avatar { width: 16px; height: 16px; font-size: 9px; }
-.new-page { margin-top: 8px; text-align: left; border: none; background: none; color: var(--muted); padding: 6px 8px; }
+.new-page { width: 100%; text-align: left; border: none; background: none; color: var(--faint); padding: 4px 8px; font-size: 12.5px; border-radius: 6px; cursor: pointer; }
+.new-page:hover { color: var(--text); background: var(--hover); }
 
 /* ---------- Top bar ---------- */
 .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }

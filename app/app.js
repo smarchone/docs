@@ -4,7 +4,7 @@ import { diffLines, withContext } from './diff.js';
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  sidebar: $('sidebar'), root: $('root'), pages: $('pages'),
+  sidebar: $('sidebar'), pages: $('pages'), newPage: $('new-page'),
   crumbs: $('crumbs'), saveState: $('save-state'), presence: $('presence'), presenceText: $('presence-text'),
   notice: $('notice'), canvas: $('canvas'), editor: $('editor'), empty: $('empty'),
   margin: $('margin'), threads: $('threads'), showResolved: $('show-resolved'), threadCount: $('thread-count'),
@@ -378,8 +378,6 @@ async function loadDocs() {
   for (const w of r.workspaces) state.presenceByWs[w.id] ??= w.presence;
   const ws = r.workspaces.find((w) => w.id === state.wsId);
   state.docs = ws?.docs || [];
-  els.root.textContent = ws?.root || '';
-  els.root.title = ws?.root || '';
   renderPages();
 }
 
@@ -458,22 +456,43 @@ function renderPages() {
       const pending = w.docs.reduce((n, d) => n + d.pending, 0);
       const head = el(
         'li',
-        { class: `ws${current ? ' current' : ''}`, title: `${w.root}\nClaude: ${status}`, onclick: () => !current && go(w.id, w.docs[0]?.path || '') },
+        { class: `ws${current ? ' current' : ''}`, title: `${w.repo}\nClaude: ${status}`, onclick: () => !current && go(w.id, w.docs[0]?.path || '') },
         el('span', { class: `ws-dot ${status}` }),
         el('span', { class: 'name' }, w.name),
         !current && pending ? el('span', { class: 'pending', title: 'Waiting for Claude' }, pending) : null,
+        el('button', { class: 'ws-remove', title: 'Unregister this repo', 'aria-label': `Unregister ${w.name}`, onclick: (e) => removeWorkspace(e, w) }, '×'),
+        // The full path, since repo names alone can collide
+        el('span', { class: 'ws-path' }, `\u200E${w.repo}`),
       );
-      return current ? [head, ...pageItems(w.docs)] : [head];
+      // The open repo's pages sit in an indented group under it, ending with its + New page
+      const group = current ? el('li', { class: 'ws-pages' }, el('ul', {}, ...pageItems(w.docs), el('li', { class: 'page-new' }, els.newPage))) : null;
+      return [el('li', { class: `ws-group${current ? ' current' : ''}` }, el('ul', {}, head, group))];
     }),
   );
 }
+
+// Stops serving the repo. Its .docs/ folder stays on disk; `docs serve <repo>` or /collab-docs adds it back.
+async function removeWorkspace(e, w) {
+  e.stopPropagation();
+  if (!confirm(`Unregister ${w.name}?\n${w.repo}\n\nIts .docs/ folder stays on disk. Run "docs serve" or /collab-docs in the repo to add it back.`)) return;
+  try {
+    await api('POST', '/api/workspaces/remove', { id: w.id });
+  } catch (err) {
+    alert(err.message);
+  }
+  // The workspaces_changed event refreshes the sidebar and moves off a removed repo
+}
+
+const FILE_ICON =
+  '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M4 1.75h5.25L12.5 5v9.25h-8.5z"/><path d="M9 1.75V5.25h3.5"/></svg>';
 
 function pageItems(docs) {
   return docs.map((d) => {
       const slash = d.path.lastIndexOf('/');
       return el(
         'li',
-        { class: d.path === state.doc?.path ? 'active' : '', onclick: () => navigate(d.path), title: d.path },
+        { class: `page${d.path === state.doc?.path ? ' active' : ''}`, onclick: () => navigate(d.path), title: d.path },
+        el('span', { class: 'page-icon', 'aria-hidden': 'true', html: FILE_ICON }),
         el('span', { class: 'name' }, slash > -1 ? el('span', { class: 'dir' }, d.path.slice(0, slash + 1)) : null, d.path.slice(slash + 1)),
         d.drafts ? el('span', { class: 'drafts', title: 'Draft comments, not yet published' }, d.drafts) : null,
         d.pending ? el('span', { class: 'pending', title: 'Waiting for Claude' }, d.pending) : null,
@@ -1121,7 +1140,16 @@ function connectEvents() {
     renderPresence();
     if (state.doc) renderThreads();
   });
-  es.addEventListener('workspaces_changed', () => loadDocs().then(() => !state.wsId && openFromHash()));
+  es.addEventListener('workspaces_changed', () =>
+    loadDocs().then(() => {
+      // The open repo was unregistered (here or in another tab): fall back to the first one
+      if (state.wsId && !state.workspaces.some((w) => w.id === state.wsId)) {
+        state.wsId = null;
+        state.doc = null;
+      }
+      if (!state.wsId) openFromHash();
+    }),
+  );
   es.addEventListener('docs_changed', () => loadDocs());
   es.addEventListener('threads_changed', async (e) => {
     const ev = JSON.parse(e.data);

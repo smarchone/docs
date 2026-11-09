@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // docs serve [repo]   start the daemon if it isn't running, then register <repo> (default: current folder)
 // docs status         list the workspaces the daemon serves
+// docs remove [repo]  unregister <repo> (default: current folder) or a workspace id; its .docs/ stays on disk
 // docs stop           stop the daemon
 //
 // The daemon runs detached from whoever started it (its own session, output to $DOCS_HOME/daemon.log),
@@ -64,6 +65,17 @@ try {
         console.log(`  ${w.id.padEnd(24)} ${state.padEnd(10)} ${w.root}`);
       }
     }
+  } else if (cmd === 'remove') {
+    if (!(await running())) {
+      console.log('The docs daemon is not running.');
+    } else {
+      const { workspaces } = await call('GET', '/api/workspaces');
+      const repo = path.resolve(arg || '.');
+      const w = workspaces.find((x) => x.repo === repo || x.id === arg);
+      if (!w) throw new Error(`Not registered: ${arg || repo}. See: docs status`);
+      await call('POST', '/api/workspaces/remove', { id: w.id });
+      console.log(`Unregistered ${w.repo}. Its docs stay in ${w.root}`);
+    }
   } else if (cmd === 'stop') {
     if (await running()) {
       await call('POST', '/api/shutdown', {});
@@ -72,7 +84,7 @@ try {
       console.log('The docs daemon is not running.');
     }
   } else {
-    console.log('Usage: docs serve [repo] | docs status | docs stop');
+    console.log('Usage: docs serve [repo] | docs status | docs remove [repo|id] | docs stop');
     process.exit(cmd ? 1 : 0);
   }
 } catch (err) {
