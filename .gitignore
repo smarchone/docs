@@ -1,0 +1,4 @@
+node_modules/
+
+# Default docs folder: your own docs, comments and history (created on first start)
+.docs/

@@ -1,0 +1,47 @@
+{
+  "name": "@smarchone/docs",
+  "version": "0.1.0",
+  "description": "A Markdown editor daemon for the .docs folders of all your repos. Comment in the browser; a local Claude Code session per repo resolves the comments.",
+  "type": "module",
+  "bin": {
+    "docs": "bin/docs.js"
+  },
+  "files": [
+    "server.js",
+    "bin/",
+    "app/"
+  ],
+  "scripts": {
+    "start": "node server.js",
+    "build:vendor": "esbuild vendor-src/tiptap-entry.js --bundle --format=esm --minify --outfile=app/vendor/tiptap.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "markdown",
+    "editor",
+    "claude-code",
+    "comments",
+    "docs",
+    "agent"
+  ],
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smarchone/docs.git"
+  },
+  "homepage": "https://github.com/smarchone/docs#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@tiptap/core": "^3.31.4",
+    "@tiptap/extension-table": "^3.31.4",
+    "@tiptap/extensions": "^3.31.4",
+    "@tiptap/markdown": "^3.31.4",
+    "@tiptap/pm": "^3.31.4",
+    "@tiptap/starter-kit": "^3.31.4",
+    "esbuild": "^0.28.2"
+  }
+}

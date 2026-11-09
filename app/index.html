@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Docs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/purify.min.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <!-- Pages -->
+    <nav class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="logo">✳︎</span>
+        <strong>Docs</strong>
+      </div>
+      <div class="root" id="root"></div>
+      <ul class="pages" id="pages"></ul>
+      <button class="new-page" id="new-page">+ New page</button>
+    </nav>
+
+    <section class="main">
+      <!-- Top bar -->
+      <header class="topbar">
+        <button class="ghost icon narrow-only" id="open-sidebar" title="Pages">☰</button>
+        <div class="crumbs" id="crumbs"></div>
+        <span class="save-state" id="save-state"></span>
+        <div class="grow"></div>
+
+        <label class="mode" title="Batch mode: comments stay drafts until you publish them together">
+          <input type="checkbox" id="batch-mode" /> Batch
+        </label>
+        <button class="primary publish" id="publish" hidden title="Send all draft comments to Claude (⌘⇧↵)"></button>
+        <div class="presence" id="presence" title="">
+          <span class="avatar claude">C</span><span class="presence-dot"></span>
+          <span class="presence-text" id="presence-text"></span>
+        </div>
+        <button class="ghost" id="open-history">History</button>
+        <button class="ghost narrow-only" id="open-threads">💬 <span id="thread-count"></span></button>
+      </header>
+
+      <div class="notice lock" id="lock" hidden></div>
+      <div class="notice" id="notice" hidden></div>
+
+      <!-- Document canvas: page + margin threads scroll together -->
+      <div class="canvas" id="canvas">
+        <div class="sheet">
+          <div class="page">
+            <div id="editor" class="prose"></div>
+            <div class="empty" id="empty" hidden>Pick a page on the left, or create one.</div>
+          </div>
+          <aside class="margin" id="margin">
+            <div class="margin-head">
+              <button class="ghost small" id="page-comment">+ Comment on page</button>
+              <label class="small muted"><input type="checkbox" id="show-resolved" /> Resolved</label>
+            </div>
+            <div class="threads" id="threads"></div>
+          </aside>
+        </div>
+        <div class="bubble" id="bubble" hidden>
+          <button data-cmd="comment" class="bubble-comment">💬 Comment</button>
+          <span class="bubble-fmt">
+            <button data-cmd="bold" title="Bold"><b>B</b></button>
+            <button data-cmd="italic" title="Italic"><i>I</i></button>
+            <button data-cmd="code" title="Code">&lt;/&gt;</button>
+            <button data-cmd="h2" title="Heading">H</button>
+            <button data-cmd="bullet" title="Bullet list">•</button>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- History drawer -->
+    <aside class="drawer" id="history" hidden>
+      <header>
+        <strong>History</strong>
+        <button class="ghost icon" id="close-history">✕</button>
+      </header>
+      <ol class="versions" id="versions"></ol>
+    </aside>
+  </div>
+
+  <dialog id="diff-dialog">
+    <header>
+      <strong id="diff-title"></strong>
+      <button class="ghost icon" id="diff-close">✕</button>
+    </header>
+    <div class="diff" id="diff-body"></div>
+    <footer>
+      <label class="small"><input type="checkbox" id="diff-vs-current" /> Compare with current</label>
+      <button class="primary" id="diff-restore">Restore</button>
+    </footer>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
