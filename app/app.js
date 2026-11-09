@@ -1238,3 +1238,63 @@ await loadDocs();
 await openFromHash();
 connectEvents();
 renderPresence();
+
+// ---------- Text size (xs / s / m), remembered per browser ----------
+
+const TEXT_SIZES = ['xs', 's', 'm'];
+function setTextSize(size) {
+  if (!TEXT_SIZES.includes(size)) size = 'm';
+  document.documentElement.dataset.textSize = size;
+  for (const b of $('textsize').querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.size === size));
+  try { localStorage.setItem('docs.textSize', size); } catch {}
+}
+$('textsize').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-size]');
+  if (b) setTextSize(b.dataset.size);
+});
+setTextSize(document.documentElement.dataset.textSize || 'm');
+
+// ---------- Outline minimap: heading ticks in the left gutter ----------
+
+const minimap = { root: $('minimap'), ticks: $('mm-ticks'), list: $('mm-list'), headings: [], active: -1, frame: 0 };
+const headingTop = (h) => h.getBoundingClientRect().top - els.canvas.getBoundingClientRect().top + els.canvas.scrollTop;
+const scrollToHeading = (h) => els.canvas.scrollTo({ top: Math.max(0, headingTop(h) - 24), behavior: 'smooth' });
+
+function buildMinimap() {
+  const hs = els.empty.hidden ? [...els.editor.querySelectorAll('.tiptap > h1, .tiptap > h2, .tiptap > h3')] : [];
+  minimap.headings = hs.filter((h) => h.textContent.trim());
+  minimap.root.hidden = minimap.headings.length < 2;
+  minimap.ticks.replaceChildren(...minimap.headings.map((h) => el('div', { class: `mm-tick l${h.tagName[1]}` })));
+  minimap.list.replaceChildren(
+    ...minimap.headings.map((h) =>
+      el('li', { class: `l${h.tagName[1]}` }, el('button', { type: 'button', title: h.textContent.trim(), onclick: () => scrollToHeading(h) }, h.textContent.trim())),
+    ),
+  );
+  minimap.active = -1;
+  markActiveHeading();
+}
+
+// The current section is the last heading at or above the top of the view
+function markActiveHeading() {
+  const line = els.canvas.scrollTop + 96;
+  let i = -1;
+  minimap.headings.forEach((h, j) => headingTop(h) <= line && (i = j));
+  if (i === minimap.active) return;
+  minimap.active = i;
+  [...minimap.ticks.children].forEach((t, j) => t.classList.toggle('active', j === i));
+  [...minimap.list.children].forEach((li, j) => li.classList.toggle('active', j === i));
+}
+
+const schedule = (fn) => () => {
+  cancelAnimationFrame(minimap.frame);
+  minimap.frame = requestAnimationFrame(fn);
+};
+new MutationObserver(schedule(buildMinimap)).observe(els.editor, { childList: true, subtree: true, characterData: true });
+new MutationObserver(schedule(buildMinimap)).observe(els.empty, { attributes: true, attributeFilter: ['hidden'] });
+els.canvas.addEventListener('scroll', () => requestAnimationFrame(markActiveHeading), { passive: true });
+// Clicking a tick jumps to its heading
+minimap.ticks.addEventListener('click', (e) => {
+  const i = [...minimap.ticks.children].indexOf(e.target);
+  if (i > -1) scrollToHeading(minimap.headings[i]);
+});
+buildMinimap(); // the doc may already be open: startup above awaits the first load
