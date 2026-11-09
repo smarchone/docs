@@ -126,6 +126,9 @@
     .steps li::before { content:counter(s); position:absolute; left:0; top:1px; width:22px; height:22px; border-radius:50%;
                         border:1px solid rgba(222,138,104,.45); color:var(--accent); font:12px/20px var(--mono); text-align:center; }
     .steps li span { color:var(--dim); }
+    .gh-line { margin:14px 0 52px; text-align:right; font:13px var(--mono); }
+    .gh-line a { color:var(--dim); text-decoration:none; }
+    .gh-line a:hover { color:var(--accent); }
 
     @media (max-width:700px) {
       .arch { grid-template-columns:minmax(0, 1fr); }
@@ -149,7 +152,7 @@
 <main>
   <h1><span>~/</span>smarchone/docs</h1>
   <p class="hero">Comment on your docs.<br><em>Claude makes the edits.</em></p>
-  <p class="tldr"><span>tl;dr</span> A local editor for the Markdown docs in your repos, like specs, plans and design notes. Highlight a line and leave a comment, the way you'd review a Google Doc. Claude Code, running in that repo, edits the file and replies in the thread. Works with any local agent that can run a shell command.</p>
+  <p class="tldr"><span>tl;dr</span> Comment on your repo's Markdown docs in the browser. Claude Code, or any local agent, edits the file and replies.</p>
 
   <section class="problem">
     <span class="lbl">The problem</span>
@@ -160,38 +163,7 @@
     </ul>
   </section>
 
-  <span class="fix">The fix</span>
-  <section class="pitch">
-    <div><span class="lbl">Point</span><h2>Highlight the line. Say what's wrong.</h2><p>Comments land on the exact text you mean, so there's nothing to explain.</p></div>
-    <div><span class="lbl">Keep reading</span><h2>Claude fixes it while you move on.</h2><p>A Claude Code session in your repo edits the file and answers in the thread, using your code for context.</p></div>
-    <div><span class="lbl">Glance back</span><h2>Changes show up in place.</h2><p>Every edit is marked, diffable and undoable. The Markdown stays in your repo's <code>.docs/</code> folder.</p></div>
-  </section>
-  <p class="flow"><span>read</span>→<span class="gold">highlight + comment</span>→<span>keep reading</span>→<span class="end">doc gets better</span><a class="gh" href="https://github.com/smarchone/docs">GitHub →</a></p>
-
-  <p class="eyebrow">See it work</p>
-  <p class="blurb">Two comments on a spec. One asks for an edit, the other asks a question. You never leave the page.</p>
-
-  <div class="win" aria-label="Animated demo of the Docs editor">
-    <div class="bar">
-      <div class="dots"><i></i><i></i><i></i></div>
-      <div class="title">Docs — specs/retries.md</div>
-      <div class="ctl"><button id="skip" title="Skip to end (space)">skip ⏭</button></div>
-    </div>
-    <div class="status" id="status"><i></i><span id="statusText">Claude is listening</span></div>
-    <div class="stage">
-      <article class="doc">
-        <h3>Retries</h3>
-        <p class="path">.docs/specs/retries.md</p>
-        <p id="p1"><span class="hl" id="h1">When a request to the upstream API fails, the client should, in most cases and depending on the type of error that was returned, consider trying the request again a number of times before eventually giving up.</span></p>
-        <h4>Backoff</h4>
-        <p>Waits double after each attempt, starting at 200 ms, with a little jitter so clients don't retry in lockstep.</p>
-        <p><span class="hl" id="h2">We give up after 5 attempts.</span> Errors after that go to the dead-letter queue.</p>
-      </article>
-      <aside class="rail" id="rail"><span class="lbl">Comments</span></aside>
-    </div>
-  </div>
-
-  <p class="eyebrow" style="margin-top:56px">How it works</p>
+  <p class="eyebrow">How it works</p>
   <p class="blurb">One small daemon on your machine. Each repo's agent connects to it with a skill and a polling script.</p>
 
   <section class="arch">
@@ -223,6 +195,30 @@
     <li>The polling script waits on the daemon in the background. <span>It's a long-poll, so an idle agent uses no tokens.</span></li>
     <li>When you comment, the daemon hands the page's threads to that repo's agent and locks the page. <span>The agent edits the file, replies, and the page unlocks.</span></li>
   </ol>
+  <p class="gh-line"><a href="https://github.com/smarchone/docs">GitHub →</a></p>
+
+  <p class="eyebrow">See it work</p>
+  <p class="blurb">Two comments on a spec. One asks for an edit, the other asks a question. You never leave the page.</p>
+
+  <div class="win" aria-label="Animated demo of the Docs editor">
+    <div class="bar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="title">Docs — specs/retries.md</div>
+      <div class="ctl"><button id="skip" title="Skip to end (space)">skip ⏭</button></div>
+    </div>
+    <div class="status" id="status"><i></i><span id="statusText">Claude is listening</span></div>
+    <div class="stage">
+      <article class="doc">
+        <h3>Retries</h3>
+        <p class="path">.docs/specs/retries.md</p>
+        <p id="p1"><span class="hl" id="h1">When a request to the upstream API fails, the client should, in most cases and depending on the type of error that was returned, consider trying the request again a number of times before eventually giving up.</span></p>
+        <h4>Backoff</h4>
+        <p>Waits double after each attempt, starting at 200 ms, with a little jitter so clients don't retry in lockstep.</p>
+        <p><span class="hl" id="h2">We give up after 5 attempts.</span> Errors after that go to the dead-letter queue.</p>
+      </article>
+      <aside class="rail" id="rail"><span class="lbl">Comments</span></aside>
+    </div>
+  </div>
 
   <div class="install">
     <p class="eyebrow" style="margin:28px 0 6px">Get started in 1 minute</p>
