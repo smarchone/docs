@@ -1,6 +1,6 @@
 {
   "name": "@smarchone/docs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A Markdown editor daemon for the .docs folders of all your repos. Comment in the browser; a local Claude Code session per repo resolves the comments.",
   "type": "module",
   "bin": {
