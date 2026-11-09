@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script>try { const t = localStorage.getItem('docs.textSize'); if (t) document.documentElement.dataset.textSize = t; } catch {}</script>
   <script src="vendor/marked.min.js"></script>
   <script src="vendor/purify.min.js"></script>
 </head>
@@ -31,6 +32,11 @@
         <span class="save-state" id="save-state"></span>
         <div class="grow"></div>
 
+        <div class="textsize" id="textsize" role="radiogroup" aria-label="Text size">
+          <button type="button" role="radio" data-size="xs" title="Extra small text">xs</button>
+          <button type="button" role="radio" data-size="s" title="Small text">s</button>
+          <button type="button" role="radio" data-size="m" title="Medium text">m</button>
+        </div>
         <label class="mode" title="Batch mode: comments stay drafts until you publish them together">
           <input type="checkbox" id="batch-mode" /> Batch
         </label>
@@ -45,6 +51,12 @@
 
       <div class="notice lock" id="lock" hidden></div>
       <div class="notice" id="notice" hidden></div>
+
+      <!-- Outline minimap: heading ticks at the left edge, full outline on hover -->
+      <nav class="minimap" id="minimap" aria-label="Outline" hidden>
+        <div class="mm-ticks" id="mm-ticks" tabindex="0" role="button" aria-label="Show outline"></div>
+        <ol class="mm-list" id="mm-list"></ol>
+      </nav>
 
       <!-- Document canvas: page + margin threads scroll together -->
       <div class="canvas" id="canvas">

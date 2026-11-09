@@ -147,7 +147,34 @@ button:disabled { opacity: .45; cursor: default; }
 .new-page:hover { color: var(--text); background: var(--hover); }
 
 /* ---------- Top bar ---------- */
-.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+
+/* Text size switch */
+.textsize { display: flex; gap: 1px; padding: 2px; border-radius: 8px; background: var(--hover); }
+.textsize button { border: none; background: transparent; padding: 1px 7px; font-size: 11.5px; line-height: 18px; border-radius: 6px; color: var(--muted); }
+.textsize button:hover { background: transparent; color: var(--text); }
+.textsize button[aria-checked="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+/* Outline minimap: quiet heading ticks in the left gutter; the full outline shows on hover */
+.minimap { position: absolute; left: 0; top: 76px; z-index: 6; display: flex; align-items: flex-start; }
+.mm-ticks { display: flex; flex-direction: column; gap: 6px; padding: 8px 6px 8px 8px; cursor: pointer; }
+.mm-tick { height: 2px; border-radius: 1px; background: var(--faint); opacity: .55; transition: opacity .15s, background .15s; }
+.mm-tick.l1 { width: 14px; } .mm-tick.l2 { width: 10px; } .mm-tick.l3 { width: 6px; }
+.mm-tick.active { background: var(--text); opacity: .9; }
+.minimap:hover .mm-tick { opacity: .9; }
+.mm-list {
+  list-style: none; margin: 0 0 0 2px; padding: 6px; width: 250px; max-height: min(70vh, 520px); overflow-y: auto;
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+  opacity: 0; visibility: hidden; transform: translateX(-4px); transition: opacity .12s, transform .12s, visibility 0s .12s;
+}
+.minimap:hover .mm-list, .minimap:focus-within .mm-list { opacity: 1; visibility: visible; transform: none; transition: opacity .12s, transform .12s; }
+.mm-list button {
+  display: block; width: 100%; text-align: left; border: none; background: none; border-radius: 6px;
+  padding: 4px 8px; font-size: 12.5px; line-height: 1.4; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mm-list button:hover { background: var(--hover); color: var(--text); }
+.mm-list .l2 button { padding-left: 18px; } .mm-list .l3 button { padding-left: 28px; font-size: 12px; }
+.mm-list .active button { color: var(--text); font-weight: 600; }
 .topbar { display: flex; align-items: center; gap: 10px; padding: 8px 16px; min-height: 48px; }
 .crumbs { font-size: 13.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .crumbs b { color: var(--text); font-weight: 500; }
@@ -168,14 +195,19 @@ button:disabled { opacity: .45; cursor: default; }
 
 /* ---------- Canvas: page + margin ---------- */
 .canvas { flex: 1; overflow-y: auto; position: relative; }
-.sheet { display: grid; grid-template-columns: minmax(0, 640px) 300px; gap: 56px; justify-content: center; padding: 28px 24px 30vh; }
+/* Text size (xs / s / m). The doc column is 40em of prose, ~85 characters per line at
+   every size, the top of a comfortable reading measure; the comment rail gives up width first. */
+:root { --prose-size: 17px; }
+:root[data-text-size="s"] { --prose-size: 16px; }
+:root[data-text-size="xs"] { --prose-size: 15px; }
+.sheet { display: grid; grid-template-columns: minmax(0, calc(var(--prose-size) * 40)) minmax(232px, 264px); gap: 36px; justify-content: center; padding: 28px 24px 30vh; }
 .page { min-width: 0; position: relative; }
 .empty { color: var(--muted); text-align: center; margin-top: 18vh; }
 
 /* Prose */
 .prose .tiptap {
   outline: none; min-height: 50vh;
-  font-size: 17px; line-height: 1.7; color: var(--prose); letter-spacing: -0.006em;
+  font-size: var(--prose-size); line-height: 1.7; color: var(--prose); letter-spacing: -0.006em;
   /* Inter: l with a tail and serifed I, so l / I / 1 are distinct in specs */
   font-feature-settings: "cv05", "cv08";
 }
@@ -341,7 +373,7 @@ dialog footer { border-top: 1px solid var(--border); }
 /* ---------- Narrow screens: margin becomes a drawer ---------- */
 .narrow-only { display: none; }
 @media (max-width: 1180px) {
-  .sheet { grid-template-columns: minmax(0, 640px); padding: 20px 16px 30vh; }
+  .sheet { grid-template-columns: minmax(0, calc(var(--prose-size) * 40)); padding: 20px 16px 30vh; }
   .margin {
     position: fixed; top: 0; right: 0; bottom: 0; width: min(340px, 92vw); z-index: 25; background: var(--paper);
     box-shadow: -8px 0 30px rgba(0,0,0,.12); padding: 14px; overflow-y: auto; transform: translateX(105%); transition: transform .2s;
@@ -357,5 +389,6 @@ dialog footer { border-top: 1px solid var(--border); }
   .sidebar.open { transform: none; box-shadow: 8px 0 30px rgba(0,0,0,.15); }
   .presence-text, .save-state { display: none; }
   .topbar { gap: 6px; padding: 8px 10px; flex-wrap: wrap; }
+  .minimap { display: none; }
 }
 .thread.page-level > .t-quote:first-child { border-color: var(--faint); }
