@@ -343,27 +343,43 @@ function makeWorkspace(id, repo) {
     };
   }
 
-  function waitForWake(timeoutSec) {
+  // Resolves on a comment (wake), the timeout, or the poller hanging up (signal)
+  function waitForWake(timeoutSec, signal) {
     return new Promise((resolve) => {
       const done = () => {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', done);
         waiters = waiters.filter((w) => w !== done);
         broadcastPresence();
         resolve();
       };
       const timer = setTimeout(done, Math.min(timeoutSec, 300) * 1000);
       waiters.push(done);
+      signal?.addEventListener('abort', done, { once: true });
       broadcastPresence();
     });
   }
 
-  async function nextJob(timeoutSec) {
+  // The poller's session closed: it's gone, not "recently active"
+  function pollerGone() {
+    if (!job) lastClaudeActivity = 0;
+    broadcastPresence();
+  }
+
+  async function nextJob(timeoutSec, signal) {
+    if (signal?.aborted) return pollerGone();
     claudeActed();
     let j = await claimJob();
     if (!j && timeoutSec > 0) {
-      await waitForWake(timeoutSec);
+      await waitForWake(timeoutSec, signal);
+      if (signal?.aborted) return pollerGone();
       await new Promise((r) => setTimeout(r, 50)); // let a just-posted comment be saved
       j = await claimJob();
+    }
+    if (j && signal?.aborted) {
+      // Claimed for a poller that hung up meanwhile: give the doc back instead of leaving it locked
+      if (job?.id === j.id) await endJob(j);
+      return pollerGone();
     }
     claudeActed();
     return j ? jobView(j) : { job: null, idle_seconds: Math.round((Date.now() - lastHumanActivity) / 1000) };
@@ -674,7 +690,7 @@ function makeWorkspace(id, repo) {
       });
     },
 
-    'GET /api/jobs/next': async (q) => nextJob(Number(q.get('timeout') ?? 300)),
+    'GET /api/jobs/next': async (q, _b, signal) => nextJob(Number(q.get('timeout') ?? 300), signal),
 
     'GET /api/jobs/current': async () => (job ? jobView(job) : { job: null }),
 
@@ -826,7 +842,12 @@ const server = http.createServer(async (req, res) => {
         return send(res, 415, { error: 'Send JSON (Content-Type: application/json)' });
       }
       const body = req.method === 'GET' ? {} : await readBody(req);
-      return send(res, 200, await route(url.searchParams, body));
+      // Aborts when the client hangs up before we answer (e.g. a long-poll whose Claude session closed)
+      const hangup = new AbortController();
+      res.on('close', () => res.writableFinished || hangup.abort());
+      const result = await route(url.searchParams, body, hangup.signal);
+      if (hangup.signal.aborted) return;
+      return send(res, 200, result);
     }
     if (req.method !== 'GET') return send(res, 404, { error: 'Not found' });
     const file = path.normalize(path.join(APP_DIR, url.pathname === '/' ? 'index.html' : url.pathname));
